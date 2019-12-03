@@ -1,0 +1,376 @@
+<template>
+  <div class="remark_wrapper">
+    <div class="tip">
+      <p>您本次服务的客户已经能够完成评价!客户信息如下:</p>
+    </div>
+    <ul class="info">
+      <li>
+        <span class="f600">客户姓名</span>
+        <span class="fr">{{clntName}}</span>
+      </li>
+      <li>
+        <span class="f600">手机号码</span>
+        <span class="fr">{{phoneNum}}</span>
+      </li>
+      <li>
+        <span class="f600 lh50">
+          <i></i>活动备注
+        </span>
+        <textarea
+          name="remark"
+          id="remark"
+          class="fr"
+          placeholder="请输入本次服务活动名称"
+          value="remark"
+          maxlength="20"
+          v-model="remark"
+        ></textarea>
+      </li>
+    </ul>
+    <div class="type">
+      <div style="font-weight:600;">1: 客户类型</div>
+      <ul>
+        <li class="fl">
+          <input type="radio" value="0"  v-model="type" id="new" class="radio" />
+          <label for="new">新客户</label>
+        </li>
+        <li class="fl">
+          <input type="radio" value="1"  v-model="type" id="old" class="radio" />
+          <label for="old">老客户</label>
+        </li>
+      </ul>
+    </div>
+
+    <div class="demand">
+      <div style="font-weight:600;">2: 客户近期购买保险需求</div>
+      <ul>
+        <li class="fl">
+          <input
+            id="checkbox1"
+            type="checkbox"
+            checked="checked"
+            v-model="demand"
+            value="disease"
+          />
+          <label for="checkbox1">重疾</label>
+        </li>
+        <li class="fl">
+          <input id="checkbox2" type="checkbox" v-model="demand" value="health" />
+          <label for="checkbox2">健康</label>
+        </li>
+        <li class="fl">
+          <input id="checkbox3" type="checkbox" v-model="demand" value="annuity" />
+          <label for="checkbox3">年金</label>
+        </li>
+        <li class="fl">
+          <input id="checkbox4" type="checkbox" v-model="demand" value="accident" />
+          <label for="checkbox4">意外</label>
+        </li>
+        <li class="fl else">
+          <input id="checkbox5" type="checkbox" v-model="demand" value="else" @click="showInput($event)"/>
+          <label for="checkbox5">其他</label>
+        </li>
+      </ul>
+      <input type="text" v-model="other" class="other" v-show = "show" />
+    </div>
+    <button class="save" @click="submit" :disabled="isDisabled" v-show="isOriginHei">保存</button>
+  </div>
+</template>
+
+<script>
+import axios from "axios";
+import { SAVE_REMARK } from "../assets/js/links";
+export default {
+  props: {},
+  data() {
+    return {
+      clntName: "",
+      phoneNum: "",
+      type: "",
+      demand: [],
+      other: "",
+      // lastCheck:"",
+      remark: "",
+      // show: true,
+      show: false,
+      isOriginHei: true,
+      screenHeight: document.documentElement.clientHeight, //此处也可能是其他获取方法
+      originHeight: document.documentElement.clientHeight
+    };
+  },
+  computed: {
+    isDisabled: function(e) {
+      if (
+        this.type == "" ||
+        this.demand.length == 0 ||
+        this.remark.trim() === "" 
+      ) {
+        return true;
+      } else {
+        console.log(this.lastCheck)
+        if (this.demand.indexOf("else") >= 0 && this.other.trim() !== "") {
+          console.log("thing")
+          return false;
+        } else if (
+          this.demand.indexOf("else") >= 0 &&
+          this.other.trim() == ""
+        ) {
+          return true;
+        }
+        // console.log(this.type, this.demand, this.remark);
+        return false;
+      }
+      // return isDisabled
+      // return this.type !== "0" && this.type !== "1" && this.demand.length == 0 && this.remark.trim() === ""
+    }
+  },
+  created() {
+    document.title = "客户参与提醒";
+    this.getInfo();
+    // this.formatSubmit()
+    // this.setDisabled(true)
+  },
+  mounted() {
+    let self = this;
+    window.onresize = function() {
+      return (function() {
+        self.screenHeight = document.documentElement.clientHeight;
+      })();
+    };
+  },
+  watch: {
+    screenHeight(val) {
+      if (this.originHeight > val + 100) {
+        //加100为了兼容华为的返回键
+        this.isOriginHei = false;
+      } else {
+        this.isOriginHei = true;
+      }
+    }
+  },
+  methods: {
+    getInfo() {
+      this.clntName = this.$route.query.clntName;
+      this.phoneNum = this.$route.query.phoneNum;
+      this.remark =
+        this.$route.query.remark == undefined ? "" : this.$route.query.remark;
+    },
+    submit() {
+      if(this.other.trim() != "") {
+        // this.demand.push(this.other)
+      }
+      let data = {
+        recentInsurence:this.demand,
+        clntNum:this.$route.query.clntNum,
+        customerType:this.type,
+        remark:this.remark
+      }
+      // console.log(data)
+      axios
+        .post(
+          "https://www.fastmock.site/mock/55179d336f2fda304bf34e44f4521b78/list/saveRemark",
+          data
+        )
+        .then(res => {
+          // console.log(res)
+          let that = this
+          // console.log(res.data.rspCode)
+          if (res.data.rspCode == "0") {
+            
+          // console.log(res.info, "res");
+          console.log(data)
+          alert("保存成功")
+          console.log("保存成功");
+           this.to_last = setTimeout(function() {
+              // that.$router.push({
+              //   path: "/list",
+              //   // query: { agntNum: agentNum }
+              // });
+              that.$router.go(-1)
+            }, 2000);
+          } else {console.log()
+            // console.log("返回码不是200")
+            // console.log(res.rspDesc);
+          }
+        })
+        .catch(err => {
+          // console.log(err);
+          // console.log("错误");
+        });
+    },
+    showInput(e) {
+      let checked = e.target.checked
+      if(checked) {
+        // console.log("xuanzhongle")
+        this.show = true
+        window.scrollTo(0, 300);
+      } else {
+        this.show = false
+      }
+    }
+  },
+  components: {}
+};
+</script>
+
+<style scoped lang="less">
+.remark_wrapper {
+  background-color: #f4f4f4;
+  height: 100vh;
+  .tip {
+    height: 192px;
+    width: 100%;
+    padding: 20px 30px;
+    background-color: #fff;
+    font-size: 34px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    p {
+      padding: 35px 24px 0px 24px;
+      height: 152px;
+      background: url(../assets/images/tip.png);
+      background-size: 100%;
+    }
+  }
+  .info {
+    background-color: #fff;
+    margin-bottom: 20px;
+    li {
+      min-height: 100px;
+      line-height: 100px;
+      padding: 0 30px;
+      font-size: 32px;
+      i {
+        display: inline-block;
+        height: 16px;
+        width: 16px;
+        background-color: #ff5722;
+        border-radius: 50%;
+        margin-right: 12px;
+      }
+      .lh50 {
+        line-height: 50px;
+      }
+      .f600 {
+        font-weight: 600;
+      }
+      .fr {
+        float: right;
+        color: #666;
+      }
+      textarea {
+        text-align: right;
+        height: 100px;
+        width: 400px;
+        resize: none;
+        background-color: #fff;
+        white-space: normal;
+        word-wrap: break-word;
+        word-break: break-all;
+        line-height: 50px;
+      }
+    }
+  }
+  .type {
+    background-color: #fff;
+    line-height: 100px;
+    margin-bottom: 20px;
+    font-size: 32px;
+    overflow: hidden;
+    div {
+      height: 100px;
+      padding: 0 30px;
+      border-bottom: 1px solid #eee;
+    }
+    ul {
+      padding: 0 30px;
+      height: 100px;
+      .fl {
+        float: left;
+        width: 33%;
+      }
+    }
+  }
+  .demand {
+    background-color: #fff;
+    line-height: 100px;
+    // height: 300px;
+    font-size: 32px;
+    margin-bottom: 20px;
+    overflow: hidden;
+    div {
+      height: 100px;
+      padding: 0 30px;
+      border-bottom: 1px solid #eee;
+    }
+    ul {
+      padding: 0 30px;
+      height: 200px;
+      .fl {
+        float: left;
+        width: 33%;
+      }
+      
+    }
+  }
+}
+.other {
+          width: 100%;
+          background-color: #ccc;
+          height: 100px;
+          line-height: 100px;
+          border: 3px solid black;
+        }
+button {
+  width: 100%;
+  background-color: #ff5722;
+  height: 100px;
+  border: transparent;
+  color: #fff;
+  // margin: -100px 0 0;
+  position: fixed;
+  bottom: 0;
+}
+button[disabled] {
+  background-color: #ccc;
+}
+input[type="checkbox"],
+input[type="radio"] {
+  width: 31px;
+  height: 31px;
+  margin-right: 20px;
+  position: relative;
+  bottom: 0px;
+  box-sizing: border-box;
+  visibility: hidden !important;
+}
+input[type="radio"] {
+  bottom: -30px;
+}
+input[type="checkbox"]:after,
+input[type="radio"]:after {
+  position: relative;
+  display: inline-block;
+  width: 31px;
+  height: 30px;
+  bottom: 25px;
+  content: "";
+  background: url(../assets/images/unchecked.png);
+  background-size: 100% 100%;
+  // border: 1px solid #ff5722;
+  box-sizing: border-box;
+  visibility: visible;
+}
+input[type="checkbox"]:checked:after,
+input[type="radio"]:checked:after {
+  position: relative;
+  display: inline-block;
+  width: 31px;
+  height: 31px;
+  bottom: 25px;
+  content: "";
+  background: url(../assets/images/checked.png);
+  background-size: 100% 100%;
+  // border: 1px solid #ff5722;
+}
+</style>
